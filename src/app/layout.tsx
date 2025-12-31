@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "../styles/globals.css";
+import "./globals.css";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -8,8 +8,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "CodeStudio",
-  description: "A mobile-first Replit-style web app for coding",
+  title: "Rivryn - Mobile-first IDE for cleaner code",
+  description: "Build applications with an AI-powered agent, diff-based edits, and automated quality gates.",
 };
 
 export default function RootLayout({
@@ -19,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} font-sans antialiased bg-bg text-textPrimary`}>
         {children}
       </body>
     </html>

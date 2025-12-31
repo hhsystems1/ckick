@@ -16,8 +16,41 @@ model User {
   name          String?
   avatar_url    String?
   projects      Project[]
+  settings      UserSettings?
+  agentChanges  AgentChange[]
   created_at    DateTime  @default(now())
   updated_at    DateTime  @updatedAt
+}
+
+model UserSettings {
+  id              String   @id @default(uuid())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String   @unique
+  groqApiKey      String?
+  claudeApiKey    String?
+  openaiApiKey    String?
+  minimaxApiKey   String?
+  preferredModel  String   @default("groq")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model AgentChange {
+  id          String   @id @default(uuid())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  project     Project  @relation(fields: [projectId], references: [id])
+  projectId   String
+  filePath    String
+  originalContent String
+  newContent  String
+  diff        String
+  summary     String
+  applied     Boolean  @default(false)
+  undone      Boolean  @default(false)
+  appliedAt   DateTime?
+  undoneAt    DateTime?
+  createdAt   DateTime @default(now())
 }
 
 model Project {
@@ -27,6 +60,7 @@ model Project {
   user        User      @relation(fields: [userId], references: [id])
   userId      String
   files       File[]
+  agentChanges AgentChange[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }

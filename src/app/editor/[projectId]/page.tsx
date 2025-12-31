@@ -1,5 +1,5 @@
-import EditorShell from "@/screens/EditorShell";
+import EditorShellPage from '@/screens/EditorShell'
 
-export default function EditorPage({ params }: { params: { projectId: string } }) {
-  return <EditorShell projectId={params.projectId} />;
+export default function EditorPage() {
+  return <EditorShellPage />
 }

@@ -1,91 +1,285 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { ModeSwitcher } from "@/app/components/layout/ModeSwitcher";
-import { TopBar } from "@/app/components/layout/TopBar";
+import { useEffect, useState } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import { createClient } from '@supabase/supabase-js'
+import { CodeEditor } from '@/components/CodeEditor'
+import { FileExplorer } from '@/components/FileExplorer'
+import { ModeSwitcher } from '@/components/ModeSwitcher'
+import { Agent } from '@/components/Agent'
+import { ArrowLeft } from 'lucide-react'
 
-type EditorMode = "code" | "agent" | "terminal" | "preview";
+interface File {
+  id: string
+  name: string
+  path: string
+  content: string
+}
 
-export default function EditorShell({ projectId }: { projectId: string }) {
-  const [activeMode, setActiveMode] = useState<EditorMode>("code");
+export default function EditorShellPage() {
+  const params = useParams()
+  const router = useRouter()
+  const projectId = params.projectId as string
 
-  const renderModeContent = () => {
-    switch (activeMode) {
-      case "code":
-        return (
-          <div className="flex-1 bg-gray-900 text-white p-4">
-            <div className="h-full flex items-center justify-center text-gray-400">
-              <div className="text-center">
-                <div className="mb-4">
-                  <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold mb-2">Code Editor</h3>
-                <p className="text-sm">Monaco Editor will be integrated here</p>
-              </div>
-            </div>
-          </div>
-        );
-      case "agent":
-        return (
-          <div className="flex-1 bg-white p-4">
-            <div className="h-full flex items-center justify-center text-gray-400">
-              <div className="text-center">
-                <div className="mb-4">
-                  <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold mb-2">AI Agent</h3>
-                <p className="text-sm">OpenCode AI Assistant will be integrated here</p>
-              </div>
-            </div>
-          </div>
-        );
-      case "terminal":
-        return (
-          <div className="flex-1 bg-black text-green-400 p-4 font-mono">
-            <div className="h-full flex items-center justify-center">
-              <div className="text-center">
-                <div className="mb-4">
-                  <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold mb-2">Terminal</h3>
-                <p className="text-sm">xterm.js will be integrated here</p>
-              </div>
-            </div>
-          </div>
-        );
-      case "preview":
-        return (
-          <div className="flex-1 bg-white p-4">
-            <div className="h-full flex items-center justify-center text-gray-400">
-              <div className="text-center">
-                <div className="mb-4">
-                  <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold mb-2">Preview</h3>
-                <p className="text-sm">Live preview will be shown here</p>
-              </div>
-            </div>
-          </div>
-        );
-      default:
-        return null;
+  const [files, setFiles] = useState<File[]>([])
+  const [selectedFileId, setSelectedFileId] = useState<string | null>(null)
+  const [currentMode, setCurrentMode] = useState<'code' | 'agent' | 'terminal' | 'preview'>('code')
+  const [loading, setLoading] = useState(true)
+  const [user, setUser] = useState<any>(null)
+  const [projectName, setProjectName] = useState('')
+  const [showFilePanel, setShowFilePanel] = useState(false)
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+
+  useEffect(() => {
+    async function initialize() {
+      try {
+        const { data: { user: authUser } } = await supabase.auth.getUser()
+        setUser(authUser)
+
+        if (!projectId) {
+          router.push('/')
+          return
+        }
+
+        // Load project
+        const { data: projectData } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('id', projectId)
+          .eq('userId', authUser?.id)
+          .single()
+
+        if (!projectData) {
+          router.push('/')
+          return
+        }
+
+        setProjectName(projectData.name)
+
+        // Load files
+        const filesRes = await fetch(`/api/files?projectId=${projectId}`)
+        const filesData = await filesRes.json()
+        setFiles(Array.isArray(filesData) ? filesData : [])
+
+        if (filesData.length > 0) {
+          setSelectedFileId(filesData[0].id)
+        }
+      } catch (error) {
+        console.error('Failed to initialize:', error)
+        router.push('/')
+      } finally {
+        setLoading(false)
+      }
     }
-  };
+
+    initialize()
+  }, [projectId, router, supabase])
+
+  async function handleSaveFile(content: string) {
+    if (!selectedFileId) return
+    try {
+      await fetch('/api/files', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: selectedFileId,
+          content,
+        }),
+      })
+    } catch (error) {
+      console.error('Failed to save file:', error)
+    }
+  }
+
+  async function handleCreateFile(name: string, path: string) {
+    try {
+      const res = await fetch('/api/files', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId,
+          name,
+          path,
+          content: '',
+        }),
+      })
+      const newFile = await res.json()
+      setFiles([...files, newFile])
+      setSelectedFileId(newFile.id)
+      setShowFilePanel(false)
+    } catch (error) {
+      console.error('Failed to create file:', error)
+    }
+  }
+
+  async function handleDeleteFile(fileId: string) {
+    try {
+      await fetch(`/api/files?id=${fileId}`, { method: 'DELETE' })
+      setFiles(files.filter((f) => f.id !== fileId))
+      if (selectedFileId === fileId) {
+        setSelectedFileId(files[0]?.id || null)
+      }
+    } catch (error) {
+      console.error('Failed to delete file:', error)
+    }
+  }
+
+  async function handleRenameFile(fileId: string, newName: string, newPath: string) {
+    try {
+      const res = await fetch('/api/files', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: fileId, name: newName, path: newPath }),
+      })
+      const updated = await res.json()
+      setFiles(files.map((f) => (f.id === fileId ? updated : f)))
+    } catch (error) {
+      console.error('Failed to rename file:', error)
+    }
+  }
+
+  const selectedFile = files.find((f) => f.id === selectedFileId)
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <p className="text-textSecondary">Loading editor...</p>
+      </div>
+    )
+  }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      <TopBar projectId={projectId} />
-      <ModeSwitcher activeMode={activeMode} onModeChange={setActiveMode} />
-      {renderModeContent()}
+    <div className="min-h-screen bg-bg flex flex-col">
+      {/* Header */}
+      <div className="bg-surface border-b border-borderSoft px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => router.push('/')}
+            className="p-1 hover:bg-surfaceSoft rounded transition"
+          >
+            <ArrowLeft size={20} className="text-textSecondary" />
+          </button>
+          <div>
+            <h1 className="font-bold text-textPrimary">{projectName}</h1>
+            <p className="text-xs text-textMuted">{files.length} files</p>
+          </div>
+        </div>
+        <button
+          onClick={() => setShowFilePanel(!showFilePanel)}
+          className="px-3 py-1 text-sm text-textSecondary hover:text-textPrimary transition md:hidden"
+        >
+          Files
+        </button>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex overflow-hidden pb-20 md:pb-0">
+        {/* File Explorer */}
+        <div className={`hidden md:flex w-64 flex-col ${showFilePanel ? 'flex md:flex' : 'hidden'}`}>
+          <FileExplorer
+            files={files}
+            selectedFileId={selectedFileId}
+            onSelectFile={setSelectedFileId}
+            onCreateFile={handleCreateFile}
+            onDeleteFile={handleDeleteFile}
+            onRenameFile={handleRenameFile}
+          />
+        </div>
+
+        {/* Mobile File Panel */}
+        {showFilePanel && (
+          <div className="absolute inset-0 z-30 flex flex-col md:hidden bg-bg">
+            <div className="flex items-center justify-between p-3 border-b border-borderSoft">
+              <h2 className="font-bold text-textPrimary">Files</h2>
+              <button
+                onClick={() => setShowFilePanel(false)}
+                className="text-textSecondary hover:text-textPrimary"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto">
+              <FileExplorer
+                files={files}
+                selectedFileId={selectedFileId}
+                onSelectFile={(fileId) => {
+                  setSelectedFileId(fileId)
+                  setShowFilePanel(false)
+                }}
+                onCreateFile={handleCreateFile}
+                onDeleteFile={handleDeleteFile}
+                onRenameFile={handleRenameFile}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Editor Area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* File Tabs */}
+          <div className="bg-surfaceSoft border-b border-borderSoft flex gap-1 px-2 overflow-x-auto">
+            {files.map((file) => (
+              <button
+                key={file.id}
+                onClick={() => setSelectedFileId(file.id)}
+                className={`px-3 py-2 text-sm whitespace-nowrap transition ${
+                  selectedFileId === file.id
+                    ? 'text-accent border-b-2 border-accent'
+                    : 'text-textSecondary hover:text-textPrimary'
+                }`}
+              >
+                {file.name}
+              </button>
+            ))}
+          </div>
+
+          {/* Editor */}
+          {selectedFile ? (
+            <div className="flex-1 overflow-hidden">
+              {currentMode === 'code' && (
+                <CodeEditor
+                  initialContent={selectedFile.content}
+                  fileName={selectedFile.name}
+                  onSave={handleSaveFile}
+                  onChange={() => {}}
+                />
+              )}
+              {currentMode === 'agent' && (
+                <Agent
+                  projectId={projectId}
+                  userId={user?.id || ''}
+                  onFileChange={async () => {
+                    const filesRes = await fetch(`/api/files?projectId=${projectId}`)
+                    const filesData = await filesRes.json()
+                    setFiles(Array.isArray(filesData) ? filesData : [])
+                  }}
+                />
+              )}
+              {currentMode === 'terminal' && (
+                <div className="h-full flex items-center justify-center">
+                  <p className="text-textMuted">Terminal mode (coming Week 3)</p>
+                </div>
+              )}
+              {currentMode === 'preview' && (
+                <div className="h-full flex items-center justify-center">
+                  <p className="text-textMuted">Preview mode (coming Week 3)</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex-1 flex items-center justify-center">
+              <p className="text-textMuted">No files in project</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Mode Switcher */}
+      <ModeSwitcher currentMode={currentMode} onModeChange={setCurrentMode} />
     </div>
-  );
+  )
 }

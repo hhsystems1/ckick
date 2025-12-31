@@ -3,10 +3,13 @@
 import { ChevronRight, Plus } from "lucide-react";
 
 interface HomeProps {
-  onNavigateToEditor: (projectName: string) => void;
+  onNavigateToEditor?: (projectName: string) => void;
 }
 
-export function Home({ onNavigateToEditor }: HomeProps) {
+export default function Home({ onNavigateToEditor }: HomeProps) {
+  const handleNavigate = (name: string) => {
+    if (onNavigateToEditor) onNavigateToEditor(name);
+  };
   const recentProjects = [
     { name: "Portfolio Site", time: "2 hours ago", language: "TypeScript" },
     { name: "Todo App", time: "5 hours ago", language: "JavaScript" },
@@ -30,7 +33,7 @@ export function Home({ onNavigateToEditor }: HomeProps) {
 
           {/* Agent Card - Primary Action */}
           <button
-            onClick={() => onNavigateToEditor("New Agent Project")}
+            onClick={() => handleNavigate("New Agent Project")}
             className="w-full mb-4 rounded-xl overflow-hidden shadow-lg active:scale-[0.98] transition-transform"
           >
             <div
@@ -54,7 +57,7 @@ export function Home({ onNavigateToEditor }: HomeProps) {
 
           {/* IDE Card - Secondary Action */}
           <button
-            onClick={() => onNavigateToEditor("New IDE Project")}
+            onClick={() => handleNavigate("New IDE Project")}
             className="w-full bg-card hover:bg-card/80 rounded-xl p-5 flex items-center justify-between active:scale-[0.98] transition-all shadow-sm border border-border"
           >
             <div className="flex-1 text-left">
@@ -73,7 +76,7 @@ export function Home({ onNavigateToEditor }: HomeProps) {
             {recentProjects.map((project, index) => (
               <button
                 key={index}
-                onClick={() => onNavigateToEditor(project.name)}
+                onClick={() => handleNavigate(project.name)}
                 className="w-full bg-card hover:bg-card/80 rounded-xl p-4 flex items-center justify-between active:scale-[0.98] transition-all border border-border"
               >
                 <div className="flex-1 text-left">
@@ -91,7 +94,7 @@ export function Home({ onNavigateToEditor }: HomeProps) {
 
       {/* Floating Action Button */}
       <button
-        onClick={() => onNavigateToEditor("New Project")}
+        onClick={() => handleNavigate("New Project")}
         className="fixed bottom-6 right-5 w-14 h-14 rounded-full shadow-xl flex items-center justify-center active:scale-95 transition-transform"
         style={{ background: "linear-gradient(135deg, #22D3EE 0%, #06B6D4 100%)" }}
         aria-label="Create new project"
