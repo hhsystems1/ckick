@@ -2,14 +2,20 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import type { NextRequest } from 'next/server'
 import { validateRequestSize, sanitizeProjectName } from '@/lib/payload-limit'
-import { rateLimitMiddleware, getIPAddress } from '@/lib/rate-limit'
+import { rateLimitMiddleware } from '@/lib/rate-limit'
 import { getUserBySession, createAuthErrorResponse } from '@/lib/auth'
 import { events, captureException } from '@/lib/telemetry'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  
+  if (!url || !key) {
+    throw new Error('Supabase environment variables not configured')
+  }
+  
+  return createClient(url, key)
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,6 +32,7 @@ export async function GET(request: NextRequest) {
     const rateLimitResponse = await rateLimitMiddleware(request, userId, 'project')
     if (rateLimitResponse) return rateLimitResponse
 
+    const supabase = getSupabase()
     const { data, error } = await supabase
       .from('projects')
       .select('id, name, template, createdAt, updatedAt')
@@ -76,6 +83,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid template' }, { status: 400 })
     }
 
+    const supabase = getSupabase()
     const { data: project, error: projectError } = await supabase
       .from('projects')
       .insert([{ userId, name: sanitizedName, template }])

@@ -6,10 +6,16 @@ import { rateLimitMiddleware } from '@/lib/rate-limit'
 import { validateProjectOwnership, getUserBySession, createAuthErrorResponse } from '@/lib/auth'
 import { events, captureException } from '@/lib/telemetry'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  
+  if (!url || !key) {
+    throw new Error('Supabase environment variables not configured')
+  }
+  
+  return createClient(url, key)
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -38,6 +44,7 @@ export async function GET(request: NextRequest) {
     const rateLimitResponse = await rateLimitMiddleware(request, userId, 'file')
     if (rateLimitResponse) return rateLimitResponse
 
+    const supabase = getSupabase()
     const { data, error } = await supabase
       .from('files')
       .select('id, name, path, content, updatedAt')
@@ -95,6 +102,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const supabase = getSupabase()
     const { data, error } = await supabase
       .from('files')
       .insert([{ projectId, name, path: sanitizedPath, content: content || '' }])
@@ -153,6 +161,7 @@ export async function PATCH(request: NextRequest) {
       updates.path = sanitizedPath
     }
 
+    const supabase = getSupabase()
     const { data, error } = await supabase
       .from('files')
       .update(updates)
@@ -194,6 +203,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'File id required' }, { status: 400 })
     }
 
+    const supabase = getSupabase()
     const { data: fileData, error: fileLookupError } = await supabase
       .from('files')
       .select('projectId, path')

@@ -7,12 +7,19 @@ import { rateLimitMiddleware } from '@/lib/rate-limit'
 import { validateProjectOwnership, getUserBySession, createAuthErrorResponse } from '@/lib/auth'
 import { events, captureException } from '@/lib/telemetry'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  
+  if (!url || !key) {
+    throw new Error('Supabase environment variables not configured')
+  }
+  
+  return createClient(url, key)
+}
 
 async function getUserSettings(userId: string) {
+  const supabase = getSupabase()
   const { data, error } = await supabase
     .from('user_settings')
     .select('*')
@@ -216,6 +223,7 @@ export async function POST(request: NextRequest) {
 
     const sanitizedGoal = sanitizeGoal(goal)
     
+    const supabase = getSupabase()
     const { data: project } = await supabase
       .from('projects')
       .select('id')
@@ -226,7 +234,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
     
-    const { data: files } = await supabase
+    const { data: files } = await getSupabase()
       .from('files')
       .select('*')
       .eq('projectId', projectId)

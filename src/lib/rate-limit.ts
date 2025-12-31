@@ -1,38 +1,71 @@
 import { Redis } from '@upstash/redis'
 import { Ratelimit } from '@upstash/ratelimit'
 
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-})
+let redisInstance: Redis | null = null
+let ratelimitInstance: Ratelimit | null = null
+let projectRatelimitInstance: Ratelimit | null = null
+let fileRatelimitInstance: Ratelimit | null = null
+let settingsRatelimitInstance: Ratelimit | null = null
 
-const ratelimit = new Ratelimit({
-  redis,
-  limiter: Ratelimit.slidingWindow(10, '1 m'),
-  analytics: true,
-  prefix: 'rivryn-agent',
-})
+function getRedis(): Redis {
+  if (!redisInstance) {
+    if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+      throw new Error('Upstash Redis environment variables not configured')
+    }
+    redisInstance = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    })
+  }
+  return redisInstance
+}
 
-const projectRatelimit = new Ratelimit({
-  redis,
-  limiter: Ratelimit.slidingWindow(5, '1 m'),
-  analytics: true,
-  prefix: 'rivryn-project',
-})
-
-const fileRatelimit = new Ratelimit({
-  redis,
-  limiter: Ratelimit.slidingWindow(60, '1 m'),
-  analytics: true,
-  prefix: 'rivryn-file',
-})
-
-const settingsRatelimit = new Ratelimit({
-  redis,
-  limiter: Ratelimit.slidingWindow(30, '1 m'),
-  analytics: true,
-  prefix: 'rivryn-settings',
-})
+function getRatelimit(type: 'agent' | 'project' | 'file' | 'settings'): Ratelimit {
+  const redis = getRedis()
+  
+  switch (type) {
+    case 'agent':
+      if (!ratelimitInstance) {
+        ratelimitInstance = new Ratelimit({
+          redis,
+          limiter: Ratelimit.slidingWindow(10, '1 m'),
+          analytics: true,
+          prefix: 'rivryn-agent',
+        })
+      }
+      return ratelimitInstance
+    case 'project':
+      if (!projectRatelimitInstance) {
+        projectRatelimitInstance = new Ratelimit({
+          redis,
+          limiter: Ratelimit.slidingWindow(5, '1 m'),
+          analytics: true,
+          prefix: 'rivryn-project',
+        })
+      }
+      return projectRatelimitInstance
+    case 'file':
+      if (!fileRatelimitInstance) {
+        fileRatelimitInstance = new Ratelimit({
+          redis,
+          limiter: Ratelimit.slidingWindow(60, '1 m'),
+          analytics: true,
+          prefix: 'rivryn-file',
+        })
+      }
+      return fileRatelimitInstance
+    case 'settings':
+      if (!settingsRatelimitInstance) {
+        settingsRatelimitInstance = new Ratelimit({
+          redis,
+          limiter: Ratelimit.slidingWindow(30, '1 m'),
+          analytics: true,
+          prefix: 'rivryn-settings',
+        })
+      }
+      return settingsRatelimitInstance
+  }
+}
 
 export type RateLimitType = 'agent' | 'project' | 'file' | 'settings'
 
@@ -51,23 +84,8 @@ export async function checkRateLimit(
   const identifier = `user:${userId}:${type}`
 
   try {
-    let result
-    switch (type) {
-      case 'agent':
-        result = await ratelimit.limit(identifier)
-        break
-      case 'project':
-        result = await projectRatelimit.limit(identifier)
-        break
-      case 'file':
-        result = await fileRatelimit.limit(identifier)
-        break
-      case 'settings':
-        result = await settingsRatelimit.limit(identifier)
-        break
-      default:
-        result = await ratelimit.limit(identifier)
-    }
+    const ratelimit = getRatelimit(type)
+    const result = await ratelimit.limit(identifier)
 
     return {
       success: result.success,

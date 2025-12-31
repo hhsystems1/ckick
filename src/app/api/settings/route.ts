@@ -6,10 +6,16 @@ import { rateLimitMiddleware } from '@/lib/rate-limit'
 import { getUserBySession, createAuthErrorResponse } from '@/lib/auth'
 import { events, captureException } from '@/lib/telemetry'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  
+  if (!url || !key) {
+    throw new Error('Supabase environment variables not configured')
+  }
+  
+  return createClient(url, key)
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -23,7 +29,7 @@ export async function GET(request: NextRequest) {
       return createAuthErrorResponse(authError || 'Authentication required', 401)
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('user_settings')
       .select('groqApiKey, claudeApiKey, openaiApiKey, minimaxApiKey, preferredModel')
       .eq('userId', userId)
@@ -89,7 +95,7 @@ export async function PUT(request: NextRequest) {
     if (openaiApiKey !== undefined) updates.openaiApiKey = openaiApiKey || null
     if (minimaxApiKey !== undefined) updates.minimaxApiKey = minimaxApiKey || null
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('user_settings')
       .upsert([updates])
       .select()
