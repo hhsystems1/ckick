@@ -1,61 +1,36 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { useState } from 'react'
 import Link from 'next/link'
 import { SignInModal } from '@/components/auth/SignInModal'
-import { Plus, User, LogOut } from 'lucide-react'
+import { useAuth } from '@/components/auth/AuthProvider'
+import { User, LogOut } from 'lucide-react'
 
 interface HeaderProps {
   showAuthButton?: boolean
 }
 
+function Logo() {
+  return (
+    <Link href="/" className="flex items-center gap-2 group">
+      <img
+        src="/logo.png"
+        alt="Rivryn"
+        className="h-20 w-auto group-hover:opacity-90 transition"
+      />
+    </Link>
+  )
+}
+
 export function Header({ showAuthButton = true }: HeaderProps) {
-  const [user, setUser] = useState<{
-    id: string
-    email?: string
-  } | null>(null)
+  const { user, loading, signOut } = useAuth()
   const [showSignIn, setShowSignIn] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
-  const [loading, setLoading] = useState(true)
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-
-  useEffect(() => {
-    async function checkAuth() {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-      setLoading(false)
-    }
-    checkAuth()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-    })
-
-    return () => subscription.unsubscribe()
-  }, [])
-
-  function handleSignOut() {
-    supabase.auth.signOut().then(() => {
-      setShowUserMenu(false)
-      window.location.href = '/'
-    })
-  }
-
-  function Logo() {
-    return (
-      <Link href="/" className="flex items-center gap-2 group">
-        <img
-          src="/logo.png"
-          alt="Rivryn"
-          className="h-20 w-auto group-hover:opacity-90 transition"
-        />
-      </Link>
-    )
+  async function handleSignOut() {
+    await signOut()
+    setShowUserMenu(false)
+    window.location.href = '/'
   }
 
   if (loading) {

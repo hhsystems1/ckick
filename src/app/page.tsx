@@ -1,30 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { useState } from 'react'
 import { Header } from '@/app/components/Header'
 import { SignInModal } from '@/components/auth/SignInModal'
+import { useAuth } from '@/components/auth/AuthProvider'
 import { ArrowRight, Zap, Shield, GitBranch, FileCode, Terminal } from 'lucide-react'
 import Link from 'next/link'
 
 export default function HomePage() {
+  const { user, loading } = useAuth()
   const [showSignIn, setShowSignIn] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<any>(null)
-
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-
-  useEffect(() => {
-    async function checkAuth() {
-      const { data: { user } } = await supabase.auth.getUser()
-      setUser(user)
-      setLoading(false)
-    }
-    checkAuth()
-  }, [])
 
   if (loading) {
     return (

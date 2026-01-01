@@ -1,21 +1,5 @@
-import { createClient } from '@supabase/supabase-js'
-
-let supabaseInstance: ReturnType<typeof createClient> | null = null
-
-function getSupabase() {
-  if (!supabaseInstance) {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    
-    if (!url || !key) {
-      throw new Error('Supabase environment variables not configured')
-    }
-    
-    supabaseInstance = createClient(url, key)
-  }
-  
-  return supabaseInstance
-}
+import { createServerSupabaseClient } from '@/lib/supabase/server'
+import type { NextRequest } from 'next/server'
 
 export interface ValidationResult {
   valid: boolean
@@ -32,7 +16,7 @@ export async function validateProjectOwnership(
   }
 
   try {
-    const supabase = getSupabase()
+    const supabase = await createServerSupabaseClient()
     const { data, error } = await supabase
       .from('projects')
       .select('id')
@@ -60,7 +44,7 @@ export async function validateFileAccess(
   }
 
   try {
-    const supabase = getSupabase()
+    const supabase = await createServerSupabaseClient()
     const { data: file, error: fileError } = await supabase
       .from('files')
       .select('projectId')
@@ -99,7 +83,7 @@ export async function validateFileOwnershipByPath(
       return ownershipCheck
     }
 
-    const supabase = getSupabase()
+    const supabase = await createServerSupabaseClient()
     const { data, error } = await supabase
       .from('files')
       .select('id')
@@ -118,16 +102,9 @@ export async function validateFileOwnershipByPath(
   }
 }
 
-export async function getUserBySession(request: Request): Promise<{ userId: string | null; error?: string }> {
+export async function getUserBySession(request: NextRequest): Promise<{ userId: string | null; error?: string }> {
   try {
-    const authHeader = request.headers.get('authorization')
-    const cookieHeader = request.headers.get('cookie')
-
-    if (!authHeader && !cookieHeader) {
-      return { userId: null, error: 'No auth credentials' }
-    }
-
-    const supabase = getSupabase()
+    const supabase = await createServerSupabaseClient()
     const { data: { user }, error } = await supabase.auth.getUser()
 
     if (error || !user) {

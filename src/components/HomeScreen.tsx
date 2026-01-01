@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@supabase/supabase-js'
-import Link from 'next/link'
+import { useAuth } from '@/components/auth/AuthProvider'
 import { Plus } from 'lucide-react'
+import Link from 'next/link'
 
 interface Project {
   id: string
@@ -12,11 +12,8 @@ interface Project {
   createdAt: string
 }
 
-interface HomeScreenProps {
-  userId: string
-}
-
-export function HomeScreen({ userId }: HomeScreenProps) {
+export function HomeScreen() {
+  const { user } = useAuth()
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [showNewProject, setShowNewProject] = useState(false)
@@ -24,13 +21,12 @@ export function HomeScreen({ userId }: HomeScreenProps) {
   const [selectedTemplate, setSelectedTemplate] = useState('nextjs')
   const [creating, setCreating] = useState(false)
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const userId = user?.id
 
   useEffect(() => {
-    loadProjects(userId)
+    if (userId) {
+      loadProjects(userId)
+    }
   }, [userId])
 
   async function loadProjects(uid: string) {
@@ -77,7 +73,6 @@ export function HomeScreen({ userId }: HomeScreenProps) {
   return (
     <div className="pb-32">
       <div className="max-w-full px-4 py-8 space-y-8">
-        {/* Quick Actions */}
         <div className="grid md:grid-cols-2 gap-4">
           <div className="bg-surface rounded-2xl p-6 border border-borderSoft">
             <div className="flex items-start justify-between">
@@ -120,7 +115,6 @@ export function HomeScreen({ userId }: HomeScreenProps) {
           </div>
         </div>
 
-        {/* Recent Projects */}
         <div>
           <h2 className="text-xl font-bold text-textPrimary mb-4">Recent Projects</h2>
           {loading ? (
@@ -174,7 +168,6 @@ export function HomeScreen({ userId }: HomeScreenProps) {
         </div>
       </div>
 
-      {/* FAB */}
       <button
         onClick={() => setShowNewProject(true)}
         className="fixed bottom-8 right-4 bg-accent hover:bg-accentHover text-bg rounded-full p-4 shadow-lg transition z-20"
@@ -182,11 +175,10 @@ export function HomeScreen({ userId }: HomeScreenProps) {
         <Plus size={24} />
       </button>
 
-      {/* New Project Sheet */}
       {showNewProject && (
         <div className="fixed inset-0 bg-black/50 z-30 flex flex-col items-end" onClick={() => setShowNewProject(false)}>
           <div
-            className="bg-surface w-full max-w-md rounded-t-3xl p-6 space-y-4 animate-in slide-in-from-bottom"
+            className="bg-surface w-full max-w-md rounded-b-3xl p-6 space-y-4 animate-in slide-in-from-bottom"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-2xl font-bold text-textPrimary">New Project</h2>
