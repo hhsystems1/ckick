@@ -67,6 +67,7 @@ model Project {
 
 model File {
   id        String   @id @default(uuid())
+  name      String
   path      String
   content   String   @default("")
   updatedAt DateTime @updatedAt
