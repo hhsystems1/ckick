@@ -6,18 +6,33 @@ import { createClient } from '@supabase/supabase-js'
 import { Header } from '@/app/components/Header'
 import { HomeScreen } from '@/components/HomeScreen'
 
+export const dynamic = 'force-dynamic'
+
 export default function HomePage() {
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
   const router = useRouter()
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  function getSupabase() {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    
+    if (!url || !key) {
+      return null
+    }
+    
+    return createClient(url, key)
+  }
 
   useEffect(() => {
     async function checkAuth() {
+      const supabase = getSupabase()
+      
+      if (!supabase) {
+        setLoading(false)
+        return
+      }
+
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         router.push('/')
@@ -27,7 +42,7 @@ export default function HomePage() {
       setLoading(false)
     }
     checkAuth()
-  }, [router, supabase])
+  }, [router])
 
   if (loading) {
     return (
