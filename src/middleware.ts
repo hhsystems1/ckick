@@ -7,15 +7,15 @@ const publicPaths = ['/', '/auth/callback']
 export async function middleware(request: NextRequest) {
   const res = NextResponse.next()
   
-  // Create a simple Supabase client for middleware
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-
-  // For now, we'll skip auth check in middleware and handle it in components
-  // This is a simpler approach that avoids cookie handling issues in middleware
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   
+  if (!supabaseUrl || !supabaseKey) {
+    return res
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey)
+
   return res
 }
 

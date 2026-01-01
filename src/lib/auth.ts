@@ -1,9 +1,21 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+let supabaseInstance: ReturnType<typeof createClient> | null = null
+
+function getSupabase() {
+  if (!supabaseInstance) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    
+    if (!url || !key) {
+      throw new Error('Supabase environment variables not configured')
+    }
+    
+    supabaseInstance = createClient(url, key)
+  }
+  
+  return supabaseInstance
+}
 
 export interface ValidationResult {
   valid: boolean
@@ -20,6 +32,7 @@ export async function validateProjectOwnership(
   }
 
   try {
+    const supabase = getSupabase()
     const { data, error } = await supabase
       .from('projects')
       .select('id')
@@ -47,23 +60,20 @@ export async function validateFileAccess(
   }
 
   try {
-    const { data, error } = await supabase
+    const supabase = getSupabase()
+    const { data: file, error: fileError } = await supabase
       .from('files')
-      .select(`
-        id,
-        project:projects!inner (
-          userId
-        )
-      `)
+      .select('projectId')
       .eq('id', fileId)
       .single()
 
-    if (error || !data) {
+    if (fileError || !file) {
       return { valid: false, error: 'File not found', status: 404 }
     }
 
-    const project = data.project as unknown as { userId: string } | undefined
-    if (!project || project.userId !== userId) {
+    const fileData = file as { projectId: string }
+    const ownershipCheck = await validateProjectOwnership(fileData.projectId, userId)
+    if (!ownershipCheck.valid) {
       return { valid: false, error: 'Access denied to file', status: 403 }
     }
 
@@ -89,6 +99,7 @@ export async function validateFileOwnershipByPath(
       return ownershipCheck
     }
 
+    const supabase = getSupabase()
     const { data, error } = await supabase
       .from('files')
       .select('id')
@@ -101,7 +112,8 @@ export async function validateFileOwnershipByPath(
     }
 
     return { valid: true, status: 200 }
-  } catch {
+  } catch (err) {
+    console.error('File validation error:', err)
     return { valid: false, error: 'Validation error', status: 500 }
   }
 }
@@ -115,6 +127,7 @@ export async function getUserBySession(request: Request): Promise<{ userId: stri
       return { userId: null, error: 'No auth credentials' }
     }
 
+    const supabase = getSupabase()
     const { data: { user }, error } = await supabase.auth.getUser()
 
     if (error || !user) {
