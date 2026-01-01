@@ -16,23 +16,57 @@ function getSupabase() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email } = body
+    const { email, password, isSignUp } = body
 
-    if (!email) {
-      return NextResponse.json({ error: 'Email required' }, { status: 400 })
+    if (!email || !password) {
+      return NextResponse.json({ error: 'Email and password required' }, { status: 400 })
     }
 
     const supabase = getSupabase()
-    const { error } = await supabase.auth.signInWithOtp({ email })
 
-    if (error) throw error
+    if (isSignUp) {
+      // Sign up new user
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${request.headers.get('origin')}/auth/callback`,
+        },
+      })
 
-    return NextResponse.json({
-      message: 'Magic link sent to your email',
-      email,
-    })
-  } catch (error) {
+      if (error) throw error
+
+      // Auto sign in after signup
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (signInError) throw signInError
+
+      return NextResponse.json({
+        message: 'Account created successfully',
+        user: data.user,
+      })
+    } else {
+      // Sign in existing user
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (error) throw error
+
+      return NextResponse.json({
+        message: 'Signed in successfully',
+        user: data.user,
+      })
+    }
+  } catch (error: any) {
     console.error('POST /api/auth/signin:', error)
-    return NextResponse.json({ error: 'Failed to send magic link' }, { status: 500 })
+    return NextResponse.json(
+      { error: error.message || 'Authentication failed' },
+      { status: 400 }
+    )
   }
 }
