@@ -1,24 +1,52 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+## Setup
 
-First, run the development server:
+### 1. Install Dependencies
+
+```bash
+npm install
+```
+
+### 2. Environment Variables
+
+Copy `.env.example` to `.env.local` and fill in your credentials:
+
+```bash
+cp .env.example .env.local
+```
+
+Required environment variables:
+- `DATABASE_URL` - PostgreSQL connection string
+- `NEXT_PUBLIC_SUPABASE_URL` - Your Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Your Supabase anonymous key
+- `SUPABASE_SERVICE_ROLE_KEY` - Your Supabase service role key
+
+### 3. Database Setup
+
+Run Prisma migrations to set up your database:
+
+```bash
+npx prisma migrate deploy
+# or for development
+npx prisma migrate dev
+```
+
+Generate Prisma client:
+
+```bash
+npx prisma generate
+```
+
+### 4. Run the Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ## Learn More
 
