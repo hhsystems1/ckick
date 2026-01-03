@@ -13,6 +13,7 @@ interface SignInModalProps {
 export function SignInModal({ isOpen, onClose, onSuccess }: SignInModalProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -26,6 +27,7 @@ export function SignInModal({ isOpen, onClose, onSuccess }: SignInModalProps) {
   const handleClose = useCallback(() => {
     setEmail('')
     setPassword('')
+    setConfirmPassword('')
     setError('')
     setMessage('')
     setIsSignUp(false)
@@ -63,7 +65,7 @@ export function SignInModal({ isOpen, onClose, onSuccess }: SignInModalProps) {
       const res = await fetch('/api/auth/signin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, isSignUp }),
+        body: JSON.stringify({ email, password, confirmPassword, isSignUp }),
       })
 
       const data = await res.json()
@@ -147,9 +149,28 @@ export function SignInModal({ isOpen, onClose, onSuccess }: SignInModalProps) {
             />
           </div>
 
+          {isSignUp && (
+            <div>
+              <label htmlFor="modal-confirm-password" className="block text-sm font-medium text-textPrimary mb-2">
+                Confirm Password
+              </label>
+              <input
+                id="modal-confirm-password"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                disabled={loading}
+                minLength={6}
+                className="w-full px-4 py-2.5 bg-surfaceSoft border border-borderSoft rounded-lg text-textPrimary placeholder-textMuted focus:outline-none focus:border-accent disabled:opacity-50 transition"
+              />
+            </div>
+          )}
+
           <button
             type="submit"
-            disabled={loading || !email || !password}
+            disabled={loading || !email || !password || (isSignUp && !confirmPassword)}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-accent hover:bg-accentHover text-bg font-medium rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
@@ -168,7 +189,11 @@ export function SignInModal({ isOpen, onClose, onSuccess }: SignInModalProps) {
         <div className="mt-4 text-center">
           <button
             type="button"
-            onClick={() => setIsSignUp(!isSignUp)}
+            onClick={() => {
+              setIsSignUp(!isSignUp)
+              setConfirmPassword('')
+              setError('')
+            }}
             disabled={loading}
             className="text-sm text-textSecondary hover:text-accent transition disabled:opacity-50"
           >

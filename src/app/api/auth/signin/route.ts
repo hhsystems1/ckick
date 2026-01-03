@@ -1,28 +1,48 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createServerClient } from '@supabase/ssr'
 import type { NextRequest } from 'next/server'
+import { cookies } from 'next/headers'
 
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  
-  if (!url || !key) {
-    throw new Error('Supabase environment variables not configured')
-  }
-  
-  return createClient(url, key)
+async function getSupabase() {
+  const cookieStore = await cookies()
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch (error) {
+            // Cookie setting failed
+            console.error('Failed to set cookies:', error)
+          }
+        },
+      },
+    }
+  )
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, password, isSignUp } = body
+    const { email, password, isSignUp, confirmPassword } = body
 
     if (!email || !password) {
       return NextResponse.json({ error: 'Email and password required' }, { status: 400 })
     }
 
-    const supabase = getSupabase()
+    if (isSignUp && password !== confirmPassword) {
+      return NextResponse.json({ error: 'Passwords do not match' }, { status: 400 })
+    }
+
+    const supabase = await getSupabase()
 
     if (isSignUp) {
       // Sign up new user
