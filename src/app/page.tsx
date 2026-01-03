@@ -58,7 +58,7 @@ export default function HomePage() {
                 }}
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-surface border border-borderSoft hover:bg-surfaceSoft text-textPrimary font-medium rounded-lg transition"
               >
-                View Demo
+                {user ? 'Go to Dashboard' : 'View Demo'}
               </Link>
             </div>
           </div>

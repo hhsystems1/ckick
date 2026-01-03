@@ -31,7 +31,7 @@ export function HomeScreen() {
 
   async function loadProjects(uid: string) {
     try {
-      const res = await fetch(`/api/projects?userId=${uid}`)
+      const res = await fetch('/api/projects')
       const data = await res.json()
       setProjects(Array.isArray(data) ? data : [])
     } catch (error) {
@@ -42,7 +42,7 @@ export function HomeScreen() {
   }
 
   async function handleCreateProject() {
-    if (!newProjectName.trim() || !userId) return
+    if (!newProjectName.trim()) return
 
     setCreating(true)
     try {
@@ -50,13 +50,15 @@ export function HomeScreen() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId,
           name: newProjectName,
           template: selectedTemplate,
         }),
       })
 
-      if (!res.ok) throw new Error('Failed to create project')
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || 'Failed to create project')
+      }
 
       const newProject = await res.json()
       setProjects([newProject, ...projects])
@@ -65,6 +67,7 @@ export function HomeScreen() {
       window.location.href = `/editor/${newProject.id}`
     } catch (error) {
       console.error('Failed to create project:', error)
+      alert(error instanceof Error ? error.message : 'Failed to create project')
     } finally {
       setCreating(false)
     }
@@ -82,16 +85,22 @@ export function HomeScreen() {
                   Edit code with diffs, apply changes, and undo with confidence
                 </p>
               </div>
-              <div className="w-10 h-10 bg-surfaceSoft rounded-lg flex items-center justify-center">
-                <Plus size={20} className="text-textSecondary" />
-              </div>
             </div>
-            <Link
-              href={projects[0] ? `/editor/${projects[0].id}` : '#'}
-              className={`inline-block mt-2 text-sm text-accent hover:underline ${!projects[0] ? 'pointer-events-none opacity-50' : ''}`}
-            >
-              Open in Editor →
-            </Link>
+            {projects[0] ? (
+              <Link
+                href={`/editor/${projects[0].id}`}
+                className="inline-block mt-2 text-sm text-accent hover:underline"
+              >
+                Open in Editor →
+              </Link>
+            ) : (
+              <button
+                onClick={() => setShowNewProject(true)}
+                className="inline-block mt-2 text-sm text-accent hover:underline"
+              >
+                Create project to get started →
+              </button>
+            )}
           </div>
 
           <div className="bg-surface rounded-2xl p-6 border border-borderSoft">
@@ -102,16 +111,19 @@ export function HomeScreen() {
                   Code editor with terminal, tasks, and quality gates
                 </p>
               </div>
-              <div className="w-10 h-10 bg-surfaceSoft rounded-lg flex items-center justify-center">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-textSecondary">
-                  <polyline points="16 18 22 12 16 6" />
-                  <polyline points="8 6 2 12 8 18" />
-                </svg>
-              </div>
             </div>
-            <p className="text-xs text-textMuted mt-2">
-              Create a project to start coding
-            </p>
+            {projects[0] ? (
+              <Link
+                href={`/editor/${projects[0].id}`}
+                className="inline-block mt-2 text-sm text-accent hover:underline"
+              >
+                Open in Editor →
+              </Link>
+            ) : (
+              <p className="text-xs text-textMuted mt-2">
+                Create a project to start coding
+              </p>
+            )}
           </div>
         </div>
 
