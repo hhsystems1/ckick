@@ -6,22 +6,32 @@ let ratelimitInstance: Ratelimit | null = null
 let projectRatelimitInstance: Ratelimit | null = null
 let fileRatelimitInstance: Ratelimit | null = null
 let settingsRatelimitInstance: Ratelimit | null = null
+let redisConfigured: boolean | null = null
 
-function getRedis(): Redis {
+function isRedisConfigured(): boolean {
+  if (redisConfigured !== null) {
+    return redisConfigured
+  }
+  redisConfigured = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN)
+  return redisConfigured
+}
+
+function getRedis(): Redis | null {
+  if (!isRedisConfigured()) {
+    return null
+  }
   if (!redisInstance) {
-    if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
-      throw new Error('Upstash Redis environment variables not configured')
-    }
     redisInstance = new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+      url: process.env.UPSTASH_REDIS_REST_URL!,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
     })
   }
   return redisInstance
 }
 
-function getRatelimit(type: 'agent' | 'project' | 'file' | 'settings'): Ratelimit {
+function getRatelimit(type: 'agent' | 'project' | 'file' | 'settings'): Ratelimit | null {
   const redis = getRedis()
+  if (!redis) return null
   
   switch (type) {
     case 'agent':
@@ -81,10 +91,25 @@ export async function checkRateLimit(
   userId: string,
   type: RateLimitType = 'agent'
 ): Promise<RateLimitResult> {
+  if (!isRedisConfigured()) {
+    return {
+      success: true,
+      limit: 10,
+      window: '1 minute',
+    }
+  }
+
   const identifier = `user:${userId}:${type}`
 
   try {
     const ratelimit = getRatelimit(type)
+    if (!ratelimit) {
+      return {
+        success: true,
+        limit: 10,
+        window: '1 minute',
+      }
+    }
     const result = await ratelimit.limit(identifier)
 
     return {
@@ -96,7 +121,7 @@ export async function checkRateLimit(
     }
   } catch {
     return {
-      success: false,
+      success: true,
       limit: 10,
       window: '1 minute',
     }

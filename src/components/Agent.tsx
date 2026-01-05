@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseClient } from '@/lib/supabase-browser'
 import { Send, Check, X, RotateCcw, Settings, Loader2, FileDiff, ChevronDown, ChevronRight } from 'lucide-react'
 
 interface FileDiff {
@@ -41,10 +41,7 @@ export function Agent({ projectId, userId, onFileChange }: AgentProps) {
   })
   const messagesEndRef = useRef<HTMLDivElement>(null)
   
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const supabase = getSupabaseClient()
 
   const loadSettings = useCallback(async () => {
     try {

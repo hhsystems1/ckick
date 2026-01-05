@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseClient } from '@/lib/supabase-browser'
 import { CodeEditor } from '@/components/CodeEditor'
 import { FileExplorer } from '@/components/FileExplorer'
 import { ModeSwitcher } from '@/components/ModeSwitcher'
@@ -29,10 +29,7 @@ export default function EditorShellPage() {
   const [projectName, setProjectName] = useState('')
   const [showFilePanel, setShowFilePanel] = useState(false)
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const supabase = getSupabaseClient()
 
   useEffect(() => {
     async function initialize() {
