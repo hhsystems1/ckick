@@ -20,6 +20,7 @@ export function HomeScreen() {
   const [newProjectName, setNewProjectName] = useState('')
   const [selectedTemplate, setSelectedTemplate] = useState('nextjs')
   const [creating, setCreating] = useState(false)
+  const [error, setError] = useState('')
 
   const userId = user?.id
 
@@ -56,14 +57,20 @@ export function HomeScreen() {
         }),
       })
 
-      if (!res.ok) throw new Error('Failed to create project')
+      const data = await res.json()
 
-      const newProject = await res.json()
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to create project')
+      }
+
+      const newProject = data
       setProjects([newProject, ...projects])
       setNewProjectName('')
       setShowNewProject(false)
       window.location.href = `/editor/${newProject.id}`
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to create project'
+      setError(message)
       console.error('Failed to create project:', error)
     } finally {
       setCreating(false)
@@ -169,7 +176,10 @@ export function HomeScreen() {
       </div>
 
       <button
-        onClick={() => setShowNewProject(true)}
+        onClick={() => {
+          setError('')
+          setShowNewProject(true)
+        }}
         className="fixed bottom-8 right-4 bg-accent hover:bg-accentHover text-bg rounded-full p-4 shadow-lg transition z-20"
       >
         <Plus size={24} />
@@ -239,6 +249,12 @@ export function HomeScreen() {
                 {creating ? 'Creating...' : 'Create'}
               </button>
             </div>
+
+            {error && (
+              <div className="p-3 bg-error/20 border border-error/30 rounded-lg text-error text-sm">
+                {error}
+              </div>
+            )}
           </div>
         </div>
       )}
