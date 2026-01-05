@@ -1,10 +1,9 @@
-// @ts-nocheck
-// eslint-disable @typescript-eslint/no-explicit-any
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { getSupabaseClient } from '@/lib/supabase-browser'
+import { getSupabaseClient } from '@/lib/supabase/typed-client'
 import { Send, Check, X, RotateCcw, Settings, Loader2, FileDiff, ChevronDown, ChevronRight } from 'lucide-react'
+import type { File, AgentChange } from '@/types/supabase'
 
 interface FileDiff {
   path: string
@@ -26,6 +25,14 @@ interface AgentProps {
   onFileChange: () => void
 }
 
+interface ProviderKeys {
+  groqApiKey: string
+  claudeApiKey: string
+  openaiApiKey: string
+  minimaxApiKey: string
+  preferredModel: string
+}
+
 export function Agent({ projectId, userId, onFileChange }: AgentProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
@@ -34,7 +41,7 @@ export function Agent({ projectId, userId, onFileChange }: AgentProps) {
   const [selectedDiff, setSelectedDiff] = useState<FileDiff | null>(null)
   const [appliedDiffs, setAppliedDiffs] = useState<Set<string>>(new Set())
   const [showProviderSettings, setShowProviderSettings] = useState(false)
-  const [providerKeys, setProviderKeys] = useState({
+  const [providerKeys, setProviderKeys] = useState<ProviderKeys>({
     groqApiKey: '',
     claudeApiKey: '',
     openaiApiKey: '',
@@ -161,13 +168,13 @@ export function Agent({ projectId, userId, onFileChange }: AgentProps) {
       const fileData = (fileDataResult as any).data
 
       if (fileData) {
-        // @ts-ignore
+        // @ts-expect-error - Supabase RLS types restrict updates for anon key
         await supabase.from('files').update({ 
           content: fileDiff.newContent, 
           updatedAt: new Date().toISOString() 
         }).eq('id', fileData.id)
       } else {
-        // @ts-ignore
+        // @ts-expect-error - Supabase RLS types restrict inserts for anon key
         await supabase.from('files').insert([{
           projectId,
           path: fileDiff.path,
@@ -176,7 +183,7 @@ export function Agent({ projectId, userId, onFileChange }: AgentProps) {
         }])
       }
 
-      // @ts-ignore
+      // @ts-expect-error - Supabase RLS types restrict inserts for anon key
       await supabase.from('agent_changes').insert([{
         userId,
         projectId,
@@ -211,13 +218,13 @@ export function Agent({ projectId, userId, onFileChange }: AgentProps) {
       const { data: lastChange } = await supabase
         .from('agent_changes')
         .select('*')
-        .eq('userId', userId)
-        .eq('projectId', projectId)
+        .eq('user_id', userId)
+        .eq('project_id', projectId)
         .eq('applied', true)
         .eq('undone', false)
-        .order('appliedAt', { ascending: false })
+        .order('applied_at', { ascending: false })
         .limit(1)
-        .single()
+        .single() as { data: AgentChange | null }
 
       if (!lastChange) {
         return
@@ -226,23 +233,23 @@ export function Agent({ projectId, userId, onFileChange }: AgentProps) {
       const { data: fileData } = await supabase
         .from('files')
         .select('id')
-        .eq('projectId', projectId)
-        .eq('path', (lastChange as any).filePath)
-        .single()
+        .eq('project_id', projectId)
+        .eq('path', lastChange.file_path)
+        .single() as { data: { id: string } | null }
 
       if (fileData) {
-        // @ts-ignore
-        await supabase
-          .from('files')
-          .update({ content: (lastChange as any).originalContent, updatedAt: new Date().toISOString() })
-          .eq('id', (fileData as any).id)
+        const db = supabase as any
+        await db.from('files').update({ 
+          content: lastChange.original_content, 
+          updated_at: new Date().toISOString() 
+        }).eq('id', fileData.id)
       }
 
-      // @ts-ignore
-      await supabase
-        .from('agent_changes')
-        .update({ undone: true, undoneAt: new Date().toISOString() })
-        .eq('id', (lastChange as any).id)
+      const db = supabase as any
+      await db.from('agent_changes').update({ 
+        undone: true, 
+        undone_at: new Date().toISOString() 
+      }).eq('id', lastChange.id)
 
       onFileChange()
     } catch {

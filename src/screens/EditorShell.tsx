@@ -2,19 +2,14 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { getSupabaseClient } from '@/lib/supabase-browser'
+import { getSupabaseClient } from '@/lib/supabase/typed-client'
 import { CodeEditor } from '@/components/CodeEditor'
 import { FileExplorer } from '@/components/FileExplorer'
 import { ModeSwitcher } from '@/components/ModeSwitcher'
 import { Agent } from '@/components/Agent'
 import { ArrowLeft } from 'lucide-react'
-
-interface File {
-  id: string
-  name: string
-  path: string
-  content: string
-}
+import type { Project, File } from '@/types/supabase'
+import type { User } from '@supabase/supabase-js'
 
 export default function EditorShellPage() {
   const params = useParams()
@@ -25,7 +20,7 @@ export default function EditorShellPage() {
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null)
   const [currentMode, setCurrentMode] = useState<'code' | 'agent' | 'terminal' | 'preview'>('code')
   const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<any>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [projectName, setProjectName] = useState('')
   const [showFilePanel, setShowFilePanel] = useState(false)
 
@@ -43,12 +38,16 @@ export default function EditorShellPage() {
         }
 
         // Load project
+        if (!authUser?.id) {
+          router.push('/')
+          return
+        }
         const { data: projectData } = await supabase
           .from('projects')
           .select('*')
           .eq('id', projectId)
-          .eq('userId', authUser?.id)
-          .single()
+          .eq('user_id', authUser.id)
+          .single() as { data: Project | null }
 
         if (!projectData) {
           router.push('/')
