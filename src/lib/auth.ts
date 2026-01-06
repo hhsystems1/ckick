@@ -21,7 +21,6 @@ export async function validateProjectOwnership(
       .from('projects')
       .select('id')
       .eq('id', projectId)
-      .eq('userId', userId)
       .single()
 
     if (error || !data) {
@@ -47,7 +46,7 @@ export async function validateFileAccess(
     const supabase = await createServerSupabaseClient()
     const { data: file, error: fileError } = await supabase
       .from('files')
-      .select('projectId')
+      .select('project_id')
       .eq('id', fileId)
       .single()
 
@@ -55,8 +54,8 @@ export async function validateFileAccess(
       return { valid: false, error: 'File not found', status: 404 }
     }
 
-    const fileData = file as { projectId: string }
-    const ownershipCheck = await validateProjectOwnership(fileData.projectId, userId)
+    const fileData = file as { project_id: string }
+    const ownershipCheck = await validateProjectOwnership(fileData.project_id, userId)
     if (!ownershipCheck.valid) {
       return { valid: false, error: 'Access denied to file', status: 403 }
     }
@@ -87,7 +86,7 @@ export async function validateFileOwnershipByPath(
     const { data, error } = await supabase
       .from('files')
       .select('id')
-      .eq('projectId', projectId)
+      .eq('project_id', projectId)
       .eq('path', filePath)
       .single()
 

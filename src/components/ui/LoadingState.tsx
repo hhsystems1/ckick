@@ -85,6 +85,8 @@ export function FileTreeSkeleton() {
 }
 
 export function EditorSkeleton() {
+  const widths = [70, 85, 60, 75, 90, 65, 80, 55]
+
   return (
     <div className="h-full flex flex-col">
       <div className="flex gap-1 p-2 border-b border-borderSoft">
@@ -93,8 +95,8 @@ export function EditorSkeleton() {
         ))}
       </div>
       <div className="flex-1 p-4 space-y-2">
-        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-          <Skeleton key={i} variant="text" width={`${50 + Math.random() * 45}%`} height={18} />
+        {widths.map((width, i) => (
+          <Skeleton key={i} variant="text" width={`${width}%`} height={18} />
         ))}
       </div>
     </div>

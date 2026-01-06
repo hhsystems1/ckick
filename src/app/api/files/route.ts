@@ -32,11 +32,16 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get('projectId')
 
+    console.log('[GET /api/files] userId:', userId, 'projectId:', projectId)
+
     if (!projectId) {
+      console.log('[GET /api/files] Missing projectId, returning 400')
       return NextResponse.json({ error: 'projectId required' }, { status: 400 })
     }
 
     const ownershipCheck = await validateProjectOwnership(projectId, userId)
+    console.log('[GET /api/files] ownershipCheck:', ownershipCheck)
+    
     if (!ownershipCheck.valid) {
       return new Response(JSON.stringify({ error: ownershipCheck.error }), { status: ownershipCheck.status })
     }
@@ -47,11 +52,16 @@ export async function GET(request: NextRequest) {
     const supabase = getSupabase()
     const { data, error } = await supabase
       .from('files')
-      .select('id, name, path, content, updatedAt')
-      .eq('projectId', projectId)
+      .select('id, name, path, content, updated_at')
+      .eq('project_id', projectId)
       .order('path', { ascending: true })
 
-    if (error) throw error
+    console.log('[GET /api/files] Supabase query:', { dataCount: data?.length, error })
+
+    if (error) {
+      console.error('[GET /api/files] Supabase error:', error)
+      throw error
+    }
 
     events.fileUpdated({ projectId, path: 'file_list', userId })
 
@@ -81,11 +91,16 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { projectId, name, path, content } = body
 
+    console.log('[POST /api/files] body:', { projectId, name, path, userId })
+
     if (!projectId || !name || !path) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+      console.log('[POST /api/files] Missing required fields:', { projectId, name, path })
+      return NextResponse.json({ error: 'Missing required fields: projectId, name, path' }, { status: 400 })
     }
 
     const ownershipCheck = await validateProjectOwnership(projectId, userId)
+    console.log('[POST /api/files] ownershipCheck:', ownershipCheck)
+    
     if (!ownershipCheck.valid) {
       return new Response(JSON.stringify({ error: ownershipCheck.error }), { status: ownershipCheck.status })
     }
@@ -105,11 +120,16 @@ export async function POST(request: NextRequest) {
     const supabase = getSupabase()
     const { data, error } = await supabase
       .from('files')
-      .insert([{ projectId, name, path: sanitizedPath, content: content || '' }])
+      .insert([{ project_id: projectId, name, path: sanitizedPath, content: content || '' }])
       .select()
       .single()
 
-    if (error) throw error
+    console.log('[POST /api/files] Insert result:', { data, error })
+
+    if (error) {
+      console.error('[POST /api/files] Supabase error:', error)
+      throw error
+    }
 
     events.fileCreated({ projectId, path: sanitizedPath, userId })
 
@@ -150,7 +170,7 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    const updates: Record<string, string> = { updatedAt: new Date().toISOString() }
+    const updates: Record<string, string> = { updated_at: new Date().toISOString() }
     if (content !== undefined) updates.content = content
     if (name !== undefined) updates.name = name
     if (path !== undefined) {
@@ -171,7 +191,7 @@ export async function PATCH(request: NextRequest) {
 
     if (error) throw error
 
-    events.fileUpdated({ projectId: data.projectId, path: data.path, userId })
+    events.fileUpdated({ projectId: data.project_id, path: data.path, userId })
 
     return NextResponse.json(data)
   } catch (error) {
@@ -206,7 +226,7 @@ export async function DELETE(request: NextRequest) {
     const supabase = getSupabase()
     const { data: fileData, error: fileLookupError } = await supabase
       .from('files')
-      .select('projectId, path')
+      .select('project_id, path')
       .eq('id', id)
       .single()
 
@@ -214,7 +234,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 })
     }
 
-    const ownershipCheck = await validateProjectOwnership(fileData.projectId, userId)
+    const ownershipCheck = await validateProjectOwnership(fileData.project_id, userId)
     if (!ownershipCheck.valid) {
       return new Response(JSON.stringify({ error: ownershipCheck.error }), { status: ownershipCheck.status })
     }
@@ -226,7 +246,7 @@ export async function DELETE(request: NextRequest) {
 
     if (error) throw error
 
-    events.fileDeleted({ projectId: fileData.projectId, path: fileData.path, userId })
+    events.fileDeleted({ projectId: fileData.project_id, path: fileData.path, userId })
 
     return NextResponse.json({ success: true })
   } catch (error) {

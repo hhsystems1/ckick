@@ -50,7 +50,7 @@ export default function Home({ onNavigateToEditor }: HomeProps) {
 
               <h3 className="text-2xl font-bold text-white mb-2">Agent</h3>
               <p className="text-sm leading-relaxed" style={{ color: "rgba(255, 255, 255, 0.85)" }}>
-                Describe what you want, I'll build it
+                Describe what you want, I&apos;ll build it
               </p>
             </div>
           </button>

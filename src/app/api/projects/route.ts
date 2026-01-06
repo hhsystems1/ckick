@@ -35,9 +35,9 @@ export async function GET(request: NextRequest) {
     const supabase = getSupabase()
     const { data, error } = await supabase
       .from('projects')
-      .select('id, name, template, createdAt, updatedAt')
-      .eq('userId', userId)
-      .order('createdAt', { ascending: false })
+      .select('id, name, template, created_at, updated_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
 
     if (error) throw error
 
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
     const supabase = getSupabase()
     const { data: project, error: projectError } = await supabase
       .from('projects')
-      .insert([{ userId, name: sanitizedName, template }])
+      .insert([{ user_id: userId, name: sanitizedName, template }])
       .select()
       .single()
 
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
 
     const initialFiles = getTemplateFiles(template)
     const filesToInsert = initialFiles.map(f => ({
-      projectId: project.id,
+      project_id: project.id,
       name: f.name,
       path: f.path,
       content: f.content,

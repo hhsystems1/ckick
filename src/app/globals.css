@@ -18,6 +18,10 @@
   
   --color-success: #6FAE7A;
   --color-error: #C97A4A;
+
+  --color-bgDark: #0F1419;
+  --color-surfaceDark: #1E2937;
+  --color-surfaceDarkSoft: #2A3642;
 }
 
 @theme inline {
@@ -35,6 +39,10 @@
   
   --color-success: var(--color-success);
   --color-error: var(--color-error);
+  
+  --color-bgDark: var(--color-bgDark);
+  --color-surfaceDark: var(--color-surfaceDark);
+  --color-surfaceDarkSoft: var(--color-surfaceDarkSoft);
   
   --font-sans: var(--font-inter);
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -102,4 +110,22 @@ select {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-textMuted);
+}
+
+@layer utilities {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 20px);
+  }
+  
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  
+  .active\:scale-95:active {
+    transform: scale(0.95);
+  }
+  
+  .active\:scale-98:active {
+    transform: scale(0.98);
+  }
 }

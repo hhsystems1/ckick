@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseClient } from '@/lib/supabase/typed-client'
 import { X, Mail, Check, AlertCircle } from 'lucide-react'
 
 interface SignInModalProps {
@@ -18,10 +18,7 @@ export function SignInModal({ isOpen, onClose, onSuccess }: SignInModalProps) {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const supabase = getSupabaseClient()
 
   const handleClose = useCallback(() => {
     setEmail('')

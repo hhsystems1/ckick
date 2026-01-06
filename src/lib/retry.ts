@@ -124,7 +124,7 @@ export function createRetryableFetch(
       
       if (typeof response.status === 'number' && options.retryOn?.includes(response.status)) {
         const error = new Error(`HTTP ${response.status}`)
-        ;(error as any).status = response.status
+        ;(error as Error & { status?: number }).status = response.status
         throw error
       }
       
@@ -133,16 +133,25 @@ export function createRetryableFetch(
   }
 }
 
+interface SupabaseError {
+  message?: string
+  code?: string
+}
+
+interface SupabaseResult<T> {
+  data: T | null
+  error: SupabaseError | null
+}
+
 export async function retrySupabaseQuery<T>(
-  query: () => Promise<{ data: T | null; error: any }>,
+  query: () => Promise<SupabaseResult<T>>,
   options: RetryOptions = {}
 ): Promise<T> {
   return withRetry(async () => {
     const result = await query()
     
     if (result.error) {
-      const error = new Error(result.error.message)
-      ;(error as any).code = result.error.code
+      const error = new Error(result.error.message || 'Supabase error')
       throw error
     }
     
