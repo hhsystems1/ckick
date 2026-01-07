@@ -12,16 +12,10 @@
   "categories": ["developer", "productivity", "utilities"],
   "icons": [
     {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
+      "src": "/logo.png",
+      "sizes": "any",
       "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ],
   "shortcuts": [
@@ -29,15 +23,13 @@
       "name": "New Project",
       "short_name": "New",
       "description": "Create a new project",
-      "url": "/home?new=true",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "url": "/home?new=true"
     },
     {
       "name": "Recent Projects",
       "short_name": "Recent",
       "description": "View recent projects",
-      "url": "/home",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "url": "/home"
     }
   ],
   "screenshots": [],
