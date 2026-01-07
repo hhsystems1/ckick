@@ -12,7 +12,7 @@ interface HeaderProps {
 
 function Logo() {
   return (
-    <Link href="/" className="flex items-center gap-2 group">
+    <Link href="/home" className="flex items-center gap-2 group">
       <img
         src="/logo.png"
         alt="Rivryn"

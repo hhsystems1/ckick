@@ -1,17 +1,24 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Header } from '@/app/components/Header'
 import { SignInModal } from '@/components/auth/SignInModal'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { ArrowRight, Zap, Shield, GitBranch, FileCode, Terminal } from 'lucide-react'
-import Link from 'next/link'
 
 export default function HomePage() {
   const { user, loading } = useAuth()
   const [showSignIn, setShowSignIn] = useState(false)
+  const router = useRouter()
 
-  if (loading) {
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/home')
+    }
+  }, [user, loading, router])
+
+  if (loading || user) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
@@ -48,18 +55,12 @@ export default function HomePage() {
                 Get Started
                 <ArrowRight size={18} />
               </button>
-              <Link
-                href={user ? '/home' : '#'}
-                onClick={(e) => {
-                  if (!user) {
-                    e.preventDefault()
-                    setShowSignIn(true)
-                  }
-                }}
+              <button
+                onClick={() => setShowSignIn(true)}
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-surface border border-borderSoft hover:bg-surfaceSoft text-textPrimary font-medium rounded-lg transition"
               >
                 View Demo
-              </Link>
+              </button>
             </div>
           </div>
         </section>
