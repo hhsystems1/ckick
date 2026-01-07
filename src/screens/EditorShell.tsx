@@ -46,7 +46,7 @@ export default function EditorShellPage() {
         setUser(authUser)
 
         if (!projectId) {
-          router.push('/')
+          router.push('/home')
           return
         }
 
@@ -57,7 +57,7 @@ export default function EditorShellPage() {
 
         const projectRes = await fetch(`/api/projects/${projectId}`)
         if (!projectRes.ok) {
-          router.push('/')
+          router.push('/home')
           return
         }
 
@@ -73,7 +73,7 @@ export default function EditorShellPage() {
         }
       } catch (error) {
         console.error('[Editor] Failed to initialize:', error)
-        router.push('/')
+        router.push('/home')
       } finally {
         setLoading(false)
       }
@@ -238,7 +238,7 @@ export default function EditorShellPage() {
       <header className="bg-[#1E2937] border-b border-[#4FB6A1]/20 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => router.push('/')}
+            onClick={() => router.push('/home')}
             className="p-2 hover:bg-[#F5F7F6]/10 rounded-lg transition active:scale-95"
             style={{ WebkitTapHighlightColor: 'transparent' }}
           >
