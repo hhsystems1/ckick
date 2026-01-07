@@ -1,6 +1,6 @@
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient as createSSRBrowserClient } from '@supabase/ssr'
 
-let supabaseClient: ReturnType<typeof createClient> | null = null
+let supabaseClient: ReturnType<typeof createSSRBrowserClient> | null = null
 
 export function getSupabaseClient() {
   if (supabaseClient) {
@@ -14,13 +14,7 @@ export function getSupabaseClient() {
     throw new Error('Supabase environment variables not configured')
   }
 
-  supabaseClient = createClient(url, key, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
-    },
-  })
+  supabaseClient = createSSRBrowserClient(url, key)
 
   return supabaseClient
 }
