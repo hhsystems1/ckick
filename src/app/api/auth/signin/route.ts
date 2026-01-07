@@ -1,17 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import type { NextRequest } from 'next/server'
-
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  
-  if (!url || !key) {
-    throw new Error('Supabase environment variables not configured')
-  }
-  
-  return createClient(url, key)
-}
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,11 +11,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email and password required' }, { status: 400 })
     }
 
-    const supabase = getSupabase()
+    const supabase = await createServerSupabaseClient()
 
     if (isSignUp) {
       // Sign up new user
-      const { data, error } = await supabase.auth.signUp({
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -34,19 +23,20 @@ export async function POST(request: NextRequest) {
         },
       })
 
-      if (error) throw error
+      if (signUpError) throw signUpError
 
-      // Auto sign in after signup
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      // Auto sign in after signup to set session cookies
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
-      if (signInError) throw signInError
+      if (error) throw error
 
       return NextResponse.json({
         message: 'Account created successfully',
         user: data.user,
+        session: data.session,
       })
     } else {
       // Sign in existing user
@@ -60,9 +50,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         message: 'Signed in successfully',
         user: data.user,
+        session: data.session,
       })
     }
-    } catch (error) {
+  } catch (error) {
     console.error('POST /api/auth/signin:', error)
     const errorMessage = error instanceof Error ? error.message : 'Authentication failed'
     return NextResponse.json(
