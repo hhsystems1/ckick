@@ -34,9 +34,8 @@ export function SignInForm() {
         setMessage('Account created! Signing you in...')
       }
 
-      // Redirect to home page after successful login
-      router.push('/')
-      router.refresh()
+      // Hard reload to ensure session cookies are picked up
+      window.location.href = '/home'
     } catch (err) {
       setError('An error occurred. Please try again.')
       console.error(err)
