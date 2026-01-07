@@ -2,14 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { getSupabaseClient } from '@/lib/supabase/typed-client'
+import { useAuth } from '@/components/auth/AuthProvider'
 import { MonacoEditor } from '@/components/MonacoEditor'
 import { FileExplorer } from '@/components/FileExplorer'
 import { Agent } from '@/components/Agent'
 import { TerminalPanel } from '@/components/TerminalPanel'
 import { ArrowLeft, FolderOpen, Terminal, Bot, Rocket, Eye, Loader2 } from 'lucide-react'
 import type { File } from '@/types/supabase'
-import type { User } from '@supabase/supabase-js'
 
 type PageType = 'files' | 'code' | 'terminal' | 'agent' | 'deploy' | 'preview'
 
@@ -25,38 +24,38 @@ const navItems = [
 export default function EditorShellPage() {
   const params = useParams()
   const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
   const projectId = params.projectId as string
 
   const [files, setFiles] = useState<File[]>([])
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState<PageType>('code')
-  const [loading, setLoading] = useState(true)
-  const [user, setUser] = useState<User | null>(null)
+  const [projectLoading, setProjectLoading] = useState(true)
   const [projectName, setProjectName] = useState('')
   const [deploying, setDeploying] = useState(false)
   const [deployUrl, setDeployUrl] = useState<string | null>(null)
   const [previewPort, setPreviewPort] = useState<number | null>(null)
 
-  const supabase = getSupabaseClient()
-
+  // Wait for auth to load, then check if user exists
   useEffect(() => {
-    async function initialize() {
+    if (authLoading) return // Wait for auth to finish loading
+
+    if (!user) {
+      router.push('/home')
+      return
+    }
+
+    if (!projectId) {
+      router.push('/home')
+      return
+    }
+
+    // User is authenticated, load project data
+    async function loadProject() {
       try {
-        const { data: { user: authUser } } = await supabase.auth.getUser()
-        setUser(authUser)
-
-        if (!projectId) {
-          router.push('/home')
-          return
-        }
-
-        if (!authUser?.id) {
-          router.push('/home')
-          return
-        }
-
         const projectRes = await fetch(`/api/projects/${projectId}`)
         if (!projectRes.ok) {
+          console.error('[Editor] Project fetch failed:', projectRes.status)
           router.push('/home')
           return
         }
@@ -68,19 +67,19 @@ export default function EditorShellPage() {
         const filesData = await filesRes.json()
         setFiles(Array.isArray(filesData) ? filesData : [])
 
-        if (filesData.length > 0 && !selectedFileId) {
+        if (filesData.length > 0) {
           setSelectedFileId(filesData[0].id)
         }
       } catch (error) {
-        console.error('[Editor] Failed to initialize:', error)
+        console.error('[Editor] Failed to load project:', error)
         router.push('/home')
       } finally {
-        setLoading(false)
+        setProjectLoading(false)
       }
     }
 
-    initialize()
-  }, [projectId, router, selectedFileId])
+    loadProject()
+  }, [authLoading, user, projectId, router])
 
   async function handleSaveFile(content: string) {
     if (!selectedFileId) return
@@ -222,7 +221,8 @@ export default function EditorShellPage() {
 
   const selectedFile = files.find((f) => f.id === selectedFileId)
 
-  if (loading) {
+  // Show loading while auth or project is loading
+  if (authLoading || projectLoading) {
     return (
       <div className="min-h-screen bg-[#0F1419] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -231,6 +231,11 @@ export default function EditorShellPage() {
         </div>
       </div>
     )
+  }
+
+  // If no user after loading, don't render (redirect will happen)
+  if (!user) {
+    return null
   }
 
   return (
@@ -321,7 +326,7 @@ export default function EditorShellPage() {
         {currentPage === 'agent' && (
           <Agent
             projectId={projectId}
-            userId={user?.id || ''}
+            userId={user.id}
             onFileChange={async () => {
               const filesRes = await fetch(`/api/files?projectId=${projectId}`)
               const filesData = await filesRes.json()
