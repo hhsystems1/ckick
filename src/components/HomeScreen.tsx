@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { Plus } from 'lucide-react'
 import Link from 'next/link'
@@ -14,6 +15,7 @@ interface Project {
 
 export function HomeScreen() {
   const { user } = useAuth()
+  const router = useRouter()
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [showNewProject, setShowNewProject] = useState(false)
@@ -67,7 +69,7 @@ export function HomeScreen() {
       setProjects([newProject, ...projects])
       setNewProjectName('')
       setShowNewProject(false)
-      window.location.href = `/editor/${newProject.id}`
+      router.push(`/editor/${newProject.id}`)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to create project'
       setError(message)

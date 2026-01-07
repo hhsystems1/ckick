@@ -51,7 +51,7 @@ export default function EditorShellPage() {
         }
 
         if (!authUser?.id) {
-          router.push('/')
+          router.push('/home')
           return
         }
 
