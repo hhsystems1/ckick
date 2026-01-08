@@ -96,17 +96,27 @@ export default function EditorShellPage() {
 
   async function handleCreateFile(name: string, path: string) {
     try {
+      console.log('[EditorShell] Creating file:', { projectId, name, path })
       const res = await fetch('/api/files', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ projectId, name, path, content: '' }),
       })
-      const newFile = await res.json()
-      setFiles([...files, newFile])
-      setSelectedFileId(newFile.id)
+
+      const data = await res.json()
+      console.log('[EditorShell] API response:', { ok: res.ok, status: res.status, data })
+
+      if (!res.ok) {
+        throw new Error(data.error || `Failed to create file: ${res.status}`)
+      }
+
+      setFiles([...files, data])
+      setSelectedFileId(data.id)
       setCurrentPage('code')
+      console.log('[EditorShell] File created and switched to code view')
     } catch (error) {
-      console.error('Failed to create file:', error)
+      console.error('[EditorShell] Failed to create file:', error)
+      throw error // Re-throw to let FileExplorer handle the UI feedback
     }
   }
 

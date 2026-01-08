@@ -60,13 +60,30 @@ export function FileExplorer({
 
   const handleCreateFile = async () => {
     if (!newFileName.trim() || !onCreateFile || isCreatingFile) return
+
+    // Validate filename
+    const trimmedName = newFileName.trim()
+    if (trimmedName.length === 0) {
+      alert('Please enter a file name')
+      return
+    }
+
+    // Check for invalid characters
+    if (trimmedName.includes('..') || trimmedName.includes('//')) {
+      alert('Invalid file name')
+      return
+    }
+
     setIsCreatingFile(true)
     try {
-      await onCreateFile(newFileName, `/${newFileName}`)
+      console.log('[FileExplorer] Creating file:', trimmedName)
+      await onCreateFile(trimmedName, `/${trimmedName}`)
+      console.log('[FileExplorer] File created successfully')
       setNewFileName('')
       setShowCreateFile(false)
     } catch (error) {
-      console.error('Failed to create file:', error)
+      console.error('[FileExplorer] Failed to create file:', error)
+      alert(`Failed to create file: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsCreatingFile(false)
     }

@@ -134,7 +134,7 @@ export function MonacoEditor({
   }
 
   return (
-    <div className="w-full h-full relative">
+    <div className="w-full h-full relative bg-[#0E1110] overflow-hidden">
       <Editor
         height="100%"
         language={getLanguage(fileName)}
@@ -155,12 +155,18 @@ export function MonacoEditor({
           cursorStyle: 'line',
           padding: { top: isMobile ? 60 : 16, bottom: isMobile ? 80 : 16 },
           smoothScrolling: true,
+          renderValidationDecorations: 'on',
+          scrollbar: {
+            useShadows: false,
+            verticalScrollbarSize: isMobile ? 8 : 10,
+            horizontalScrollbarSize: isMobile ? 8 : 10,
+          },
         }}
       />
 
       {/* Mobile-friendly floating action buttons */}
       {isMobile && (
-        <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
+        <div className="absolute top-4 right-4 flex flex-col gap-2 z-[100]">
           {/* Save Status Indicator */}
           {saveStatus !== 'idle' && (
             <div className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
@@ -186,7 +192,7 @@ export function MonacoEditor({
 
       {/* Start Typing Button for Mobile */}
       {isMobile && showStartButton && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#0F1419]/50 backdrop-blur-sm z-20">
+        <div className="absolute inset-0 flex items-center justify-center bg-[#0F1419]/80 backdrop-blur-sm z-[200]">
           <button
             onClick={handleStartTyping}
             className="flex flex-col items-center gap-3 px-8 py-6 bg-[#4FB6A1] text-[#0F1419] rounded-2xl shadow-2xl hover:opacity-90 active:scale-95 transition-all"
