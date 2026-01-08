@@ -44,18 +44,18 @@ npm run build
 **Goal:** Get Monaco to correct version
 
 ### Tasks:
-- [ ] Run: `npm install @monaco-editor/react@^4.7.0`
-- [ ] Run: `npm install xterm@^5.5.0 xterm-addon-fit@^0.10.0`
-- [ ] Verify package.json shows:
+- [x] Run: `npm install @monaco-editor/react@^4.7.0`
+- [x] Run: `npm install xterm@^5.5.0 xterm-addon-fit@^0.10.0` (Installed latest stable: xterm@5.3.0, xterm-addon-fit@0.8.0)
+- [x] Verify package.json shows:
   ```json
   "@monaco-editor/react": "^4.7.0",
-  "xterm": "^5.5.0"
+  "xterm": "^5.3.0"
   ```
 
 ### Success Criteria:
-- [ ] package.json updated
-- [ ] npm install succeeds
-- [ ] No peer dependency warnings
+- [x] package.json updated
+- [x] npm install succeeds
+- [x] No peer dependency warnings
 
 ### Human Verification Required:
 - [ ] I confirm: Dependencies updated
@@ -73,8 +73,8 @@ npm run build
 ### Tasks:
 
 #### Task 3.1: Create monaco-config.ts
-- [ ] Create file: `lib/monaco-config.ts`
-- [ ] Content:
+- [x] Create file: `src/lib/monaco-config.ts`
+- [x] Content:
 ```typescript
 export const monacoConfig = {
   paths: {
@@ -96,8 +96,8 @@ export const defaultEditorOptions = {
 ```
 
 #### Task 3.2: Update next.config.js
-- [ ] Backup current next.config.js (copy to next.config.js.backup)
-- [ ] Update next.config.js with:
+- [x] Backup current next.config.ts (copied to next.config.ts.backup)
+- [x] Update next.config.ts with:
 ```javascript
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -123,8 +123,8 @@ module.exports = nextConfig;
 ```
 
 #### Task 3.3: Create CodeEditor Component
-- [ ] Create file: `components/CodeEditor.tsx`
-- [ ] Content:
+- [x] Create file: `src/components/CodeEditor.tsx`
+- [x] Content:
 ```typescript
 'use client';
 
@@ -182,10 +182,10 @@ export function CodeEditor({
 ```
 
 ### Success Criteria:
-- [ ] `lib/monaco-config.ts` exists
-- [ ] `components/CodeEditor.tsx` exists
-- [ ] `next.config.js` has webpack config
-- [ ] TypeScript check passes: `npm run build`
+- [x] `src/lib/monaco-config.ts` exists
+- [x] `src/components/CodeEditor.tsx` exists
+- [x] `next.config.ts` has webpack config and turbopack config
+- [x] TypeScript check passes: `npm run build` ✓ Compiled successfully
 
 ### Human Verification Required:
 - [ ] I confirm: All 3 files created
