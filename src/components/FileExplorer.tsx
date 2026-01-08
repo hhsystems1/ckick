@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, ChevronRight, FileText, Folder, Plus, X } from 'lucide-react'
+import { ChevronDown, ChevronRight, FileText, Folder, Plus, X, Loader2 } from 'lucide-react'
 
 interface File {
   id: string
@@ -33,6 +33,7 @@ export function FileExplorer({
   const [renamingFileId, setRenamingFileId] = useState<string | null>(null)
   const [renamingName, setRenamingName] = useState('')
   const [renamingFilePath, setRenamingFilePath] = useState<string | null>(null)
+  const [isCreatingFile, setIsCreatingFile] = useState(false)
 
   // Group files by folder
   const buildTree = () => {
@@ -58,13 +59,16 @@ export function FileExplorer({
   }
 
   const handleCreateFile = async () => {
-    if (!newFileName.trim() || !onCreateFile) return
+    if (!newFileName.trim() || !onCreateFile || isCreatingFile) return
+    setIsCreatingFile(true)
     try {
       await onCreateFile(newFileName, `/${newFileName}`)
       setNewFileName('')
       setShowCreateFile(false)
     } catch (error) {
       console.error('Failed to create file:', error)
+    } finally {
+      setIsCreatingFile(false)
     }
   }
 
@@ -98,25 +102,43 @@ export function FileExplorer({
 
       <div className="flex-1 overflow-y-auto space-y-1 p-3">
         {showCreateFile && (
-          <div className="flex items-center gap-2 mb-3">
-            <input
-              type="text"
-              value={newFileName}
-              onChange={(e) => setNewFileName(e.target.value)}
-              placeholder="file.ts"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleCreateFile()
-                if (e.key === 'Escape') setShowCreateFile(false)
-              }}
-              autoFocus
-              className="flex-1 px-3 py-2.5 text-sm bg-[#0F1419] border border-[#4FB6A1]/30 rounded-lg text-[#F5F7F6] placeholder-[#F5F7F6]/30 focus:outline-none focus:border-[#4FB6A1]"
-            />
+          <div className="bg-[#0F1419] border-2 border-[#4FB6A1] rounded-xl p-3 mb-3">
+            <label className="block text-xs text-[#F5F7F6]/60 mb-2 font-medium">New File</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={newFileName}
+                onChange={(e) => setNewFileName(e.target.value)}
+                placeholder="index.ts"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleCreateFile()
+                  if (e.key === 'Escape') setShowCreateFile(false)
+                }}
+                autoFocus
+                className="flex-1 px-4 py-3 text-base bg-[#1E2937] border border-[#4FB6A1]/30 rounded-lg text-[#F5F7F6] placeholder-[#F5F7F6]/40 focus:outline-none focus:border-[#4FB6A1] focus:ring-2 focus:ring-[#4FB6A1]/20"
+                style={{ fontSize: '16px' }}
+              />
+              <button
+                onClick={handleCreateFile}
+                disabled={!newFileName.trim() || isCreatingFile}
+                className="px-4 py-3 bg-[#4FB6A1] hover:bg-[#4FB6A1]/90 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition active:scale-95 font-medium text-[#0F1419] text-sm flex items-center gap-2"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
+              >
+                {isCreatingFile ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create'
+                )}
+              </button>
+            </div>
             <button
-              onClick={handleCreateFile}
-              className="p-2.5 bg-[#4FB6A1] hover:bg-[#4FB6A1]/80 rounded-lg transition active:scale-95"
-              style={{ WebkitTapHighlightColor: 'transparent' }}
+              onClick={() => setShowCreateFile(false)}
+              className="mt-2 text-xs text-[#F5F7F6]/40 hover:text-[#F5F7F6]/60"
             >
-              <Plus size={18} className="text-[#0F1419]" />
+              Cancel (ESC)
             </button>
           </div>
         )}
