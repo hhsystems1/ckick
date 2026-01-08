@@ -297,16 +297,29 @@ export default function EditorShellPage() {
                 />
               </div>
             ) : (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center">
-                  <Bot size={48} className="mx-auto text-[#4FB6A1] mb-4 opacity-50" />
-                  <p className="text-[#F5F7F6]/40">Select a file to edit</p>
-                  <button
-                    onClick={() => setCurrentPage('files')}
-                    className="mt-4 px-4 py-2 bg-[#4FB6A1] text-[#0F1419] rounded-lg text-sm"
-                  >
-                    Browse Files
-                  </button>
+              <div className="flex-1 flex items-center justify-center p-6">
+                <div className="text-center max-w-md">
+                  <FolderOpen size={64} className="mx-auto text-[#4FB6A1] mb-6 opacity-50" />
+                  <h2 className="text-xl font-bold text-[#F5F7F6] mb-2">No File Selected</h2>
+                  <p className="text-[#F5F7F6]/60 mb-6">
+                    {files.length === 0
+                      ? "Create your first file to start coding"
+                      : "Select a file from the Files tab to start editing"}
+                  </p>
+                  <div className="flex flex-col gap-3">
+                    <button
+                      onClick={() => setCurrentPage('files')}
+                      className="px-6 py-3 bg-[#4FB6A1] text-[#0F1419] rounded-xl text-sm font-medium hover:opacity-90 active:scale-95 transition-all"
+                      style={{ WebkitTapHighlightColor: 'transparent' }}
+                    >
+                      {files.length === 0 ? 'Create First File' : 'Browse Files'}
+                    </button>
+                    {files.length === 0 && (
+                      <p className="text-xs text-[#F5F7F6]/40">
+                        Tap the Files tab below, then tap the + button
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
